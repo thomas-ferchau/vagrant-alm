@@ -14,6 +14,7 @@
   become: yes
 
   roles:
+    - geerlingguy.java
     - geerlingguy.repo-epel
     - geerlingguy.jenkins
     - geerlingguy.git
@@ -40,12 +41,16 @@
         state: "present"
       when: ansible_distribution == 'RedHat'
     # delete plugins installed on previous run to prevent conflict in case if any plugin is updated
-    - name: "delete plugins"
+    - name: "delete plugins" # and re-create plugins directory
       file:
         path: "{{ sonar_path }}/sonarqube-{{ sonar_major_version }}.{{ sonar_minor_version }}/extensions/plugins"
-        state: absent      
+        state: "{{ item }}"
+      with_items:
+        - absent
+        - directory
   roles:
     - role: geerlingguy.java
+      java_packages: "{{ java_package }}"
     - role: ANXS.postgresql
       postgresql_users:
         - name: sonar
@@ -54,6 +59,7 @@
         - name: sonar
           owner: sonar
     - role: nginxinc.nginx
+    - role: jdauphant.ssl-certs
     - role: lean_delivery.sonarqube
       sonar_java_opts:
         web: "-server -Xmx512m -Xms512m"

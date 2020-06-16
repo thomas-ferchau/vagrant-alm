@@ -1,0 +1,8 @@
+# geerlingguy.java
+java_package: java-11-openjdk
+# Ubuntu: java_package: openjdk-11-jdk
+
+# jdauphant.ssl-certs
+ssl_certs_path_owner: nginx
+ssl_certs_path_group: nginx
+ssl_certs_common_name: sonar.local

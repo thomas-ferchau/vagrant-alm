@@ -1,16 +1,18 @@
 # https://github.com/geerlingguy/ansible-role-jenkins
 jenkins_package_state: latest
+# To install a specific Jenkins version (e.g. if the Jenkins mirror servers return an error for the latest version...)
+#jenkins_version: 2.239
 jenkins_admin_username: admin
 jenkins_admin_password: admin123
 jenkins_plugins: [
-  'sonar', 
-  'nexus-artifact-uploader', 
-  'ansible', 
-  'workflow-aggregator', 
-  'slack', 
-  'slack-uploader', 
-  'git', 
-  'github', 
+  'sonar',
+  'nexus-artifact-uploader',
+  'ansible',
+  'workflow-aggregator',
+  'slack',
+  'slack-uploader',
+  'git',
+  'github',
   'credentials-binding',
   'pipeline-utility-steps',
   'disk-usage',
