@@ -12,13 +12,19 @@ Vagrant.configure("2") do |config|
 
   # vagrant up tower --provider virtualbox
   config.vm.define "tower" do |tower|
-      config.vm.hostname = "tower.local"
+      tower.vm.hostname = "tower.local"
       tower.vm.box = "ansible/tower"
       tower.vm.network :private_network, ip: "192.168.56.2"
       tower.vm.provider :virtualbox do |v|
          v.gui = false
          v.memory = 2048
-         v.cpus = 2
+         # Nested Virtualization in Virtualbox funktioniert nur mit 1 CPU in den inneren VMs:
+         # https://www.virtualbox.org/ticket/19561
+         #v.cpus = 2
+         v.cpus = 1
+      end
+      tower.vm.provider :libvirt do |lb|
+          lb.memory = 2048
       end
   end
 
@@ -29,88 +35,66 @@ Vagrant.configure("2") do |config|
   ################ VBox #############################
   # let's use vbox
   # TODO: let's refactor and build a function for god's sake
-  config.vm.define "jenkins_box" do |jenkins|
-      config.vm.hostname = "jenkins.local"
+
+  config.vm.define "jenkins" do |jenkins|
+      jenkins.vm.hostname = "jenkins.local"
       jenkins.vm.network :private_network, ip: "192.168.56.3"
       jenkins.vm.provider :virtualbox do |v|
          v.gui = false
          v.memory = 2048
       end
+      jenkins.vm.provider :libvirt do |lb|
+          lb.memory = 2048
+      end
   end
     
-  config.vm.define "sonar_box" do |sonar|
-    config.vm.hostname = "sonar.local"
+  config.vm.define "sonar" do |sonar|
+    sonar.vm.hostname = "sonar.local"
     sonar.vm.network :private_network, ip: "192.168.56.4"
     sonar.vm.provider :virtualbox do |v|
         v.gui = false
         v.memory = 3000
+        # Nested Virtualization in Virtualbox funktioniert nur mit 1 CPU in den inneren VMs:
+        # https://www.virtualbox.org/ticket/19561
+        #v.cpus = 2
+        v.cpus = 1
+    end
+    sonar.vm.provider :libvirt do |lb|
+      lb.memory = 2048
     end
  end
 
-  config.vm.define "nexus_box", primary: true do |nexus|
-    config.vm.hostname = "nexus.local"
+  config.vm.define "nexus", primary: true do |nexus|
+    nexus.vm.hostname = "nexus.local"
     nexus.vm.network :private_network, ip: "192.168.56.5"
     nexus.vm.provider :virtualbox do |v|
         v.gui = false
         v.memory = 1024   
     end
-  end
-
-  config.vm.define "app_box", primary: true do |app|
-      config.vm.hostname = "app.local"
-      app.vm.network :private_network, ip: "192.168.56.11"
-      app.vm.provider :virtualbox do |v|
-        v.gui = false
-        v.memory = 512  
-      end
-  end
-
-  config.vm.define "app2_box", primary: true do |app2|
-      config.vm.hostname = "app2.local"
-      app2.vm.network :private_network, ip: "192.168.56.7"
-      app2.vm.provider :virtualbox do |v|
-         v.gui = false
-         v.memory = 512
-      end
-  end
- 
-  ################ LIB VIRT #########################
-
-  config.vm.define "jenkins" do |jenkins|
-      config.vm.hostname = "jenkins.local"
-      jenkins.vm.network :private_network, ip: "172.16.10.100"
-      jenkins.vm.provider :libvirt do |lb|
-          lb.memory = 2048
-      end
-  end
-
-  config.vm.define "sonar" do |sonar|
-      config.vm.hostname = "sonar.local"
-      sonar.vm.network :private_network, ip: "172.16.10.110"
-      sonar.vm.provider :libvirt do |lb|
-          lb.memory = 2048
-      end
-  end
-
-  config.vm.define "nexus", primary: true do |nexus|
-      config.vm.hostname = "nexus.local"
-      nexus.vm.network :private_network, ip: "172.16.10.120"
-      nexus.vm.provider :libvirt do |lb|
+    nexus.vm.provider :libvirt do |lb|
         lb.memory = 1024
-      end
+    end
   end
 
   config.vm.define "app", primary: true do |app|
-    config.vm.hostname = "app.local"
-    app.vm.network :private_network, ip: "172.16.10.130"
+    app.vm.hostname = "app.local"
+    app.vm.network :private_network, ip: "192.168.56.11"
+    app.vm.provider :virtualbox do |v|
+        v.gui = false
+        v.memory = 512
+    end
     app.vm.provider :libvirt do |lb|
         lb.memory = 512
     end
   end
 
   config.vm.define "app2", primary: true do |app2|
-    config.vm.hostname = "app2.local"
-    app2.vm.network :private_network, ip: "172.16.10.140"
+    app2.vm.hostname = "app2.local"
+    app2.vm.network :private_network, ip: "192.168.56.7"
+    app2.vm.provider :virtualbox do |v|
+        v.gui = false
+        v.memory = 512
+    end
     app2.vm.provider :libvirt do |lb|
         lb.memory = 512
     end
@@ -123,11 +107,13 @@ Vagrant.configure("2") do |config|
   config.vm.provision "ansible" do |ansible|
       ansible.playbook = "ansible/alm.yml"
       ansible.groups = {
-          "jenkins_server" => ["jenkins", "jenkins_box"],
-          "sonar_server" => ["sonar", "sonar_box"],
-          "nexus_server" => ["nexus", "nexus_box"],
-          "app_server" => ["app", "app2", "app_box", "app2_box"],
+          "jenkins_server" => ["jenkins"],
+          "sonar_server" => ["sonar"],
+          "nexus_server" => ["nexus"],
+          "app_server" => ["app", "app2"],
       }
+      # For Debugging in case of errors:
+      # ansible.verbose = "vvv"
   end
 
   if Vagrant.has_plugin?("vagrant-hostmanager")
