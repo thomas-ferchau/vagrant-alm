@@ -4,7 +4,7 @@ dependencies:
   - geerlingguy.postgresql
   - geerlingguy.sonar
   - wtanaka.unzip
-  - savoirfairelinux.nexus3-oss
+  - ansible-thoteam.nexus3-oss
   - geerlingguy.git
   - tecris.maven
   - geerlingguy.repo-epel

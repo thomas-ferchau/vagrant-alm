@@ -28,7 +28,7 @@
 
   roles:
     - geerlingguy.java
-    - savoirfairelinux.nexus3-oss
+    - ansible-thoteam.nexus3-oss
 
 - name: Deploy Sonar Server
   hosts: sonar_server

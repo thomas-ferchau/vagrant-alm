@@ -8,7 +8,7 @@
 
 - src: wtanaka.unzip
 
-- src: savoirfairelinux.nexus3-oss
+- src: ansible-thoteam.nexus3-oss
 
 - src: geerlingguy.git
 
