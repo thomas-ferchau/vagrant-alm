@@ -74,7 +74,6 @@
         es: "-Xmx1g -Xms1g" 
         ce: "-Xmx512m -Xms512m"
       web:
-        host: "localhost"
         port: 9000
         path: "/" 
       sonar_proxy_server_name: "{{ ssl_certs_common_name }}"
