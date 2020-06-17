@@ -2,9 +2,11 @@
 
 # To run this manually (in this example, only for the sonar_server):
 #   cd vagrant-alm
+#   vagrant rsync ansiblehost
+#   scp -i .\.vagrant\machines\ansiblehost\virtualbox\private_key -rv .vagrant vagrant@ansiblehost.local:/vagrant/
 #   vagrant ssh ansiblehost
 #     cd /vagrant/ansible/
-#     ansible-playbook -i inventory.ini -l sonar_server -v alm.yml /etc/nginx/conf.d/sonar.conf
+#     ansible-playbook -i inventory.ini -l sonar_server -v alm.yml
 
 
 # requirements install
@@ -74,6 +76,7 @@
         es: "-Xmx1g -Xms1g" 
         ce: "-Xmx512m -Xms512m"
       web:
+        host: 0.0.0.0
         port: 9000
         path: "/" 
       sonar_proxy_server_name: "{{ ssl_certs_common_name }}"
