@@ -32,13 +32,14 @@ Vagrant.configure("2") do |config|
   # boxes at https://atlas.hashicorp.com/search.
   config.vm.box = "centos/7"
 
-  ################ VBox #############################
-  # let's use vbox
+  # give boxes more time to boot - especially required for nested virtualization
+  config.vm.boot_timeout = 1200
+
   # TODO: let's refactor and build a function for god's sake
 
   config.vm.define "jenkins" do |jenkins|
       jenkins.vm.hostname = "jenkins.local"
-      jenkins.vm.network :private_network, ip: "192.168.56.3"
+      jenkins.vm.network :private_network, ip: "172.16.10.100"
       jenkins.vm.provider :virtualbox do |v|
          v.gui = false
          v.memory = 2048
@@ -50,7 +51,7 @@ Vagrant.configure("2") do |config|
     
   config.vm.define "sonar" do |sonar|
     sonar.vm.hostname = "sonar.local"
-    sonar.vm.network :private_network, ip: "192.168.56.4"
+    sonar.vm.network :private_network, ip: "172.16.10.110"
     sonar.vm.provider :virtualbox do |v|
         v.gui = false
         v.memory = 3000
@@ -66,7 +67,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.define "nexus", primary: true do |nexus|
     nexus.vm.hostname = "nexus.local"
-    nexus.vm.network :private_network, ip: "192.168.56.5"
+    nexus.vm.network :private_network, ip: "172.16.10.120"
     nexus.vm.provider :virtualbox do |v|
         v.gui = false
         v.memory = 1024   
@@ -78,7 +79,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.define "app", primary: true do |app|
     app.vm.hostname = "app.local"
-    app.vm.network :private_network, ip: "192.168.56.11"
+    app.vm.network :private_network, ip: "172.16.10.130"
     app.vm.provider :virtualbox do |v|
         v.gui = false
         v.memory = 512
@@ -90,7 +91,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.define "app2", primary: true do |app2|
     app2.vm.hostname = "app2.local"
-    app2.vm.network :private_network, ip: "192.168.56.7"
+    app2.vm.network :private_network, ip: "172.16.10.140"
     app2.vm.provider :virtualbox do |v|
         v.gui = false
         v.memory = 512
@@ -100,12 +101,31 @@ Vagrant.configure("2") do |config|
     end
   end
 
-  config.vm.provider "libvirt" do |libvirt|
-      libvirt.storage_pool_name = "ext_storage"
-  end
+  config.vm.define "ansiblehost", primary: true do |ansiblehost|
+    ansiblehost.vm.hostname = "ansiblehost.local"
+    ansiblehost.vm.network :private_network, ip: "172.16.10.190"
+    ansiblehost.vm.provider :virtualbox do |v|
+        v.gui = false
+        v.memory = 512
+    end
+    ansiblehost.vm.provider :libvirt do |lb|
+        lb.memory = 512
+    end
 
-  config.vm.provision "ansible" do |ansible|
-      ansible.playbook = "ansible/alm.yml"
+    # Rsync the current folder to /vagrant on ansiblehost (exclude ansible/roles to prevent downloaded roles from being deleted every time)
+    ansiblehost.vm.synced_folder ".", "/vagrant", type: "rsync", rsync__verbose: true, rsync__exclude: ["ansible/roles"]
+
+    # Copy .vagrant directory (excluded from rsync by default)
+    ansiblehost.vm.provision "file", source: ".vagrant", destination: "/vagrant/.vagrant"
+    ansiblehost.vm.provision "shell", inline: "chmod og-rwx /vagrant/.vagrant/machines/*/*/private_key"
+
+    ansiblehost.vm.provision "ansible_local" do |ansible|
+      # See alm.yml on how to run the ansible provisioning manually for a specific type of hosts
+      ansible.playbook = "/vagrant/ansible/alm.yml"
+      ansible.galaxy_role_file = "/vagrant/ansible/requirements.yml"
+      ansible.limit = "all"
+      ansible.inventory_path = "/vagrant/ansible/inventory.ini"
+      ansible.provisioning_path = "/vagrant/ansible" # required for ansible.cfg
       ansible.groups = {
           "jenkins_server" => ["jenkins"],
           "sonar_server" => ["sonar"],
@@ -114,6 +134,11 @@ Vagrant.configure("2") do |config|
       }
       # For Debugging in case of errors:
       # ansible.verbose = "vvv"
+    end
+  end
+
+  config.vm.provider "libvirt" do |libvirt|
+      libvirt.storage_pool_name = "ext_storage"
   end
 
   if Vagrant.has_plugin?("vagrant-hostmanager")
